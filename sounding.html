@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sounding Kalkulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .control-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .tanks-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tank {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tank-header {
+            margin-bottom: 20px;
+        }
+
+        .tank-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .tank-info {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .tank-input-group {
+            margin-bottom: 15px;
+        }
+
+        .tank-input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .tank-input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95em;
+        }
+
+        .visualization {
+            margin-top: 20px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f0f0f0;
+            height: 200px;
+            position: relative;
+        }
+
+        .fill-level {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            transition: height 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .fill-level-empty {
+            height: 0;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+
+        .result-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .result-unit {
+            font-size: 0.8em;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Sounding Kalkulator</h1>
+        <a href="index.html">← Tilbake til meny</a>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="trim">Trim (meter)</label>
+            <input type="number" id="trim" value="0" step="0.1" placeholder="Skriv inn trim-verdi">
+        </div>
+    </div>
+
+    <div class="tanks-container" id="tanksContainer"></div>
+
+    <script>
+        const tankData = {
+            'Pur.Sludge tk Stb': {
+                'name': 'Purifier Sludge Stb',
+                'trim_values': [-1, 0, 1, 2, 3, 4, 5],
+                'soundings': {
+                    '0 cm': [0.2, 0.3, 0.3, 0.3, 0.4, 0.4, 0.4],
+                    '1 cm': [0.3, 0.4, 0.4, 0.4, 0.5, 0.5, 0.5],
+                    '2 cm': [0.4, 0.5, 0.5, 0.5, 0.6, 0.6, 0.6],
+                    '3 cm': [0.5, 0.6, 0.6, 0.6, 0.7, 0.7, 0.7],
+                    '4 cm': [0.6, 0.7, 0.7, 0.7, 0.8, 0.8, 0.8],
+                    '5 cm': [0.7, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9]
+                },
+                'min': 0.2,
+                'max': 0.9
+            },
+            'Pur.Sludge tk Port': {
+                'name': 'Purifier Sludge Port',
+                'trim_values': [-1, 0, 1, 2, 3, 4, 5],
+                'soundings': {
+                    '0 cm': [0.2, 0.3, 0.1, 0.1, 0.1, 0.1, 0.1],
+                    '1 cm': [0.3, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2],
+                    '2 cm': [0.4, 0.5, 0.3, 0.3, 0.3, 0.3, 0.3],
+                    '3 cm': [0.5, 0.6, 0.4, 0.4, 0.4, 0.4, 0.4],
+                    '4 cm': [0.6, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5],
+                    '5 cm': [0.7, 0.8, 0.6, 0.6, 0.6, 0.6, 0.6]
+                },
+                'min': 0.1,
+                'max': 0.8
+            },
+            'Sep.Bilge Oil Tk Stb': {
+                'name': 'Bilge Oil Stb',
+                'trim_values': [-1, 0, 1, 2, 3, 4, 5],
+                'soundings': {
+                    '0 cm': [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
+                    '1 cm': [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+                    '2 cm': [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
+                    '3 cm': [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                    '4 cm': [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6],
+                    '5 cm': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+                },
+                'min': 0.2,
+                'max': 0.7
+            },
+            'Sep.Bilge Oil Tk Port': {
+                'name': 'Bilge Oil Port',
+                'trim_values': [-1, 0, 1, 2, 3, 4, 5],
+                'soundings': {
+                    '0 cm': [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
+                    '1 cm': [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+                    '2 cm': [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
+                    '3 cm': [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                    '4 cm': [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6],
+                    '5 cm': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+                },
+                'min': 0.2,
+                'max': 0.7
+            }
+        };
+
+        // Interpolate value based on trim and sounding
+        function interpolateValue(tank, soundingLevel, trim) {
+            const trimVals = tank.trim_values;
+            const values = tank.soundings[soundingLevel];
+
+            if (!values) return 0;
+
+            // Find surrounding trim values
+            let idx = trimVals.indexOf(trim);
+            if (idx !== -1) {
+                return values[idx];
+            }
+
+            // Linear interpolation
+            for (let i = 0; i < trimVals.length - 1; i++) {
+                if (trimVals[i] < trim && trim < trimVals[i + 1]) {
+                    const t0 = trimVals[i];
+                    const t1 = trimVals[i + 1];
+                    const v0 = values[i];
+                    const v1 = values[i + 1];
+
+                    const ratio = (trim - t0) / (t1 - t0);
+                    return v0 + (v1 - v0) * ratio;
+                }
+            }
+
+            return 0;
+        }
+
+        function createTankElement(tankKey) {
+            const tank = tankData[tankKey];
+            const div = document.createElement('div');
+            div.className = 'tank';
+            div.innerHTML = `
+                <div class="tank-header">
+                    <div class="tank-name">${tank.name}</div>
+                </div>
+                <div class="tank-input-group">
+                    <label>Sounding (cm)</label>
+                    <input type="number" class="sounding-input" value="0" step="1" placeholder="cm">
+                </div>
+                <div class="visualization">
+                    <div class="fill-level fill-level-empty" data-tank="${tankKey}"></div>
+                </div>
+                <div class="result">
+                    <div class="result-label">Volum ved trim</div>
+                    <div class="result-value"><span data-tank="${tankKey}" class="result-amount">0.0</span> <span class="result-unit">m³</span></div>
+                </div>
+            `;
+
+            const soundingInput = div.querySelector('.sounding-input');
+            soundingInput.addEventListener('input', updateVisualizations);
+
+            return div;
+        }
+
+        function updateVisualizations() {
+            const trim = parseFloat(document.getElementById('trim').value) || 0;
+            const container = document.getElementById('tanksContainer');
+            const tanks = container.querySelectorAll('.tank');
+
+            Object.keys(tankData).forEach((tankKey, idx) => {
+                const tank = tankData[tankKey];
+                const tankElement = container.children[idx];
+                const soundingInput = tankElement.querySelector('.sounding-input');
+                const fillLevel = tankElement.querySelector(`[data-tank="${tankKey}"]`);
+                const resultAmount = tankElement.querySelector(`[data-tank="${tankKey}"].result-amount`);
+
+                const soundingCm = parseInt(soundingInput.value) || 0;
+                const soundingLabel = `${soundingCm} cm`;
+
+                const volume = interpolateValue(tank, soundingLabel, trim);
+                const percentage = ((volume - tank.min) / (tank.max - tank.min)) * 100;
+                const clampedPercentage = Math.max(0, Math.min(100, percentage));
+
+                fillLevel.classList.toggle('fill-level-empty', clampedPercentage === 0);
+                fillLevel.style.height = clampedPercentage + '%';
+                fillLevel.textContent = clampedPercentage > 10 ? `${clampedPercentage.toFixed(0)}%` : '';
+                resultAmount.textContent = volume.toFixed(2);
+            });
+        }
+
+        // Initialize
+        const container = document.getElementById('tanksContainer');
+        Object.keys(tankData).forEach(tankKey => {
+            container.appendChild(createTankElement(tankKey));
+        });
+
+        document.getElementById('trim').addEventListener('input', updateVisualizations);
+        updateVisualizations();
+    </script>
+</body>
+</html>
