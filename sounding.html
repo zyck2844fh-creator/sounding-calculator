@@ -114,6 +114,12 @@
             font-size: 0.95em;
         }
 
+        .tank-input-group .range-info {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 3px;
+        }
+
         .visualization {
             margin-top: 20px;
             border: 2px solid #667eea;
@@ -136,10 +142,6 @@
             color: white;
             font-weight: 600;
             font-size: 0.9em;
-        }
-
-        .fill-level-empty {
-            height: 0;
         }
 
         .result {
@@ -166,6 +168,12 @@
             font-size: 0.8em;
             color: #999;
         }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -181,76 +189,32 @@
         </div>
     </div>
 
-    <div class="tanks-container" id="tanksContainer"></div>
+    <div class="tanks-container" id="tanksContainer">
+        <div class="loading">Laster data...</div>
+    </div>
 
     <script>
-        const tankData = {
-            'Pur.Sludge tk Stb': {
-                'name': 'Purifier Sludge Stb',
-                'trim_values': [-1, 0, 1, 2, 3, 4, 5],
-                'soundings': {
-                    '0 cm': [0.2, 0.3, 0.3, 0.3, 0.4, 0.4, 0.4],
-                    '1 cm': [0.3, 0.4, 0.4, 0.4, 0.5, 0.5, 0.5],
-                    '2 cm': [0.4, 0.5, 0.5, 0.5, 0.6, 0.6, 0.6],
-                    '3 cm': [0.5, 0.6, 0.6, 0.6, 0.7, 0.7, 0.7],
-                    '4 cm': [0.6, 0.7, 0.7, 0.7, 0.8, 0.8, 0.8],
-                    '5 cm': [0.7, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9]
-                },
-                'min': 0.2,
-                'max': 0.9
-            },
-            'Pur.Sludge tk Port': {
-                'name': 'Purifier Sludge Port',
-                'trim_values': [-1, 0, 1, 2, 3, 4, 5],
-                'soundings': {
-                    '0 cm': [0.2, 0.3, 0.1, 0.1, 0.1, 0.1, 0.1],
-                    '1 cm': [0.3, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2],
-                    '2 cm': [0.4, 0.5, 0.3, 0.3, 0.3, 0.3, 0.3],
-                    '3 cm': [0.5, 0.6, 0.4, 0.4, 0.4, 0.4, 0.4],
-                    '4 cm': [0.6, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5],
-                    '5 cm': [0.7, 0.8, 0.6, 0.6, 0.6, 0.6, 0.6]
-                },
-                'min': 0.1,
-                'max': 0.8
-            },
-            'Sep.Bilge Oil Tk Stb': {
-                'name': 'Bilge Oil Stb',
-                'trim_values': [-1, 0, 1, 2, 3, 4, 5],
-                'soundings': {
-                    '0 cm': [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
-                    '1 cm': [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
-                    '2 cm': [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
-                    '3 cm': [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-                    '4 cm': [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6],
-                    '5 cm': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
-                },
-                'min': 0.2,
-                'max': 0.7
-            },
-            'Sep.Bilge Oil Tk Port': {
-                'name': 'Bilge Oil Port',
-                'trim_values': [-1, 0, 1, 2, 3, 4, 5],
-                'soundings': {
-                    '0 cm': [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
-                    '1 cm': [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
-                    '2 cm': [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
-                    '3 cm': [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-                    '4 cm': [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6],
-                    '5 cm': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
-                },
-                'min': 0.2,
-                'max': 0.7
-            }
-        };
+        let tankData = {};
 
-        // Interpolate value based on trim and sounding
+        // Hent data fra JSON
+        fetch('tank_data_full.json')
+            .then(response => response.json())
+            .then(data => {
+                tankData = data;
+                initializeTanks();
+            })
+            .catch(error => {
+                console.error('Feil ved lasting av data:', error);
+                document.getElementById('tanksContainer').innerHTML = '<div class="loading">Feil ved lasting av data</div>';
+            });
+
         function interpolateValue(tank, soundingLevel, trim) {
             const trimVals = tank.trim_values;
             const values = tank.soundings[soundingLevel];
 
             if (!values) return 0;
 
-            // Find surrounding trim values
+            // Exact match
             let idx = trimVals.indexOf(trim);
             if (idx !== -1) {
                 return values[idx];
@@ -274,6 +238,8 @@
 
         function createTankElement(tankKey) {
             const tank = tankData[tankKey];
+            const maxSounding = Math.max(...Object.keys(tank.soundings).map(k => parseInt(k)));
+
             const div = document.createElement('div');
             div.className = 'tank';
             div.innerHTML = `
@@ -282,10 +248,11 @@
                 </div>
                 <div class="tank-input-group">
                     <label>Sounding (cm)</label>
-                    <input type="number" class="sounding-input" value="0" step="1" placeholder="cm">
+                    <input type="number" class="sounding-input" value="0" step="1" min="0" max="${maxSounding}" placeholder="cm">
+                    <div class="range-info">0 - ${maxSounding} cm</div>
                 </div>
                 <div class="visualization">
-                    <div class="fill-level fill-level-empty" data-tank="${tankKey}"></div>
+                    <div class="fill-level" data-tank="${tankKey}"></div>
                 </div>
                 <div class="result">
                     <div class="result-label">Volum ved trim</div>
@@ -318,21 +285,23 @@
                 const percentage = ((volume - tank.min) / (tank.max - tank.min)) * 100;
                 const clampedPercentage = Math.max(0, Math.min(100, percentage));
 
-                fillLevel.classList.toggle('fill-level-empty', clampedPercentage === 0);
                 fillLevel.style.height = clampedPercentage + '%';
                 fillLevel.textContent = clampedPercentage > 10 ? `${clampedPercentage.toFixed(0)}%` : '';
                 resultAmount.textContent = volume.toFixed(2);
             });
         }
 
-        // Initialize
-        const container = document.getElementById('tanksContainer');
-        Object.keys(tankData).forEach(tankKey => {
-            container.appendChild(createTankElement(tankKey));
-        });
+        function initializeTanks() {
+            const container = document.getElementById('tanksContainer');
+            container.innerHTML = '';
 
-        document.getElementById('trim').addEventListener('input', updateVisualizations);
-        updateVisualizations();
+            Object.keys(tankData).forEach(tankKey => {
+                container.appendChild(createTankElement(tankKey));
+            });
+
+            document.getElementById('trim').addEventListener('input', updateVisualizations);
+            updateVisualizations();
+        }
     </script>
 </body>
 </html>
